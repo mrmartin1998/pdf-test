@@ -71,6 +71,21 @@ export default function AdminDashboard() {
     }
   };
 
+  const sendPDF = async (id) => {
+    try {
+      const response = await fetch(`/api/applications/${id}/send-email`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) throw new Error('Failed to send email');
+      
+      alert('PDF sent successfully');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error sending PDF');
+    }
+  };
+
   if (loading) {
     return <div className="text-center p-8">Loading...</div>;
   }
@@ -115,12 +130,18 @@ export default function AdminDashboard() {
                     <span className="text-yellow-600">Not Generated</span>
                   )}
                 </td>
-                <td>
+                <td className="space-x-2">
                   <button
                     onClick={() => generatePDF(app._id)}
                     className="btn btn-sm btn-primary"
                   >
                     Generate PDF
+                  </button>
+                  <button
+                    onClick={() => sendPDF(app._id)}
+                    className="btn btn-sm btn-secondary"
+                  >
+                    Send PDF
                   </button>
                 </td>
               </tr>
