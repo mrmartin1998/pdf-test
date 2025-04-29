@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/app/lib/mongodb';
 import Application from '@/app/lib/models/Application';
+import { sendStatusEmail } from '@/app/lib/emailService';
 
 export async function PATCH(request, { params }) {
   try {
@@ -9,19 +10,33 @@ export async function PATCH(request, { params }) {
     const { id } = params;
     const data = await request.json();
     
-    const application = await Application.findByIdAndUpdate(
-      id,
-      { $set: data },
-      { new: true }
-    );
-
-    if (!application) {
+    // Get the current application to check if status is changing
+    const currentApplication = await Application.findById(id);
+    if (!currentApplication) {
       return NextResponse.json({ 
         error: 'Application not found' 
       }, { status: 404 });
     }
 
-    return NextResponse.json(application);
+    // Update the application
+    const updatedApplication = await Application.findByIdAndUpdate(
+      id,
+      { $set: data },
+      { new: true }
+    );
+
+    // If status changed, send email notification
+    if (data.estado && data.estado !== currentApplication.estado) {
+      try {
+        await sendStatusEmail(updatedApplication);
+        console.log(`Status email sent for application ${id}`);
+      } catch (emailError) {
+        console.error('Error sending status email:', emailError);
+        // Don't fail the request if email fails
+      }
+    }
+
+    return NextResponse.json(updatedApplication);
   } catch (error) {
     console.error('Error updating application:', error);
     return NextResponse.json({ 

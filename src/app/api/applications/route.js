@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { connectDB } from '@/app/lib/mongodb';
 import Application from '@/app/lib/models/Application';
+import { sendStatusEmail } from '@/app/lib/emailService';
 
 export async function GET() {
   try {
@@ -32,6 +33,15 @@ export async function POST(request) {
     });
 
     await application.save();
+
+    // Send initial status email
+    try {
+      await sendStatusEmail(application);
+      console.log(`Initial status email sent for application ${application._id}`);
+    } catch (emailError) {
+      console.error('Error sending initial status email:', emailError);
+      // Don't fail the request if email fails
+    }
 
     return NextResponse.json({ 
       message: 'Application submitted successfully',

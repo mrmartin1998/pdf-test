@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import emailTemplates from './emails/templates';
 
 // Create a transporter object using Gmail SMTP
 const transporter = nodemailer.createTransport({
@@ -9,6 +10,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Send PDF attachment email
 export async function sendApplicationPDF(email, fullName, pdfBuffer) {
   try {
     const mailOptions = {
@@ -30,5 +32,47 @@ export async function sendApplicationPDF(email, fullName, pdfBuffer) {
   } catch (error) {
     console.error('Error sending email:', error);
     throw error;
+  }
+}
+
+// Send status update email
+export async function sendStatusEmail(application) {
+  try {
+    const template = emailTemplates[application.estado];
+    
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to: application.email,
+      subject: template.subject,
+      text: template.body(application),
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Status email sent successfully:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending status email:', error);
+    return { success: false, error };
+  }
+}
+
+// Send welcome email for new applications
+export async function sendWelcomeEmail(application) {
+  try {
+    const template = emailTemplates.newApplication;
+    
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to: application.email,
+      subject: template.subject,
+      text: template.body(application),
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Welcome email sent successfully:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending welcome email:', error);
+    return { success: false, error };
   }
 } 
